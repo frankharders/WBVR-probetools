@@ -2,7 +2,7 @@
 probetools
 
 Requirements:
-
+versions used at 1 october 2022 will work.
 - blat
 - bbmap suite
 - probetools
