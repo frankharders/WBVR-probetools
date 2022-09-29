@@ -1,5 +1,6 @@
 #!/usr/bin/perl
-# WBVR-blat2gff.pl
+# WBVR-blat2gff.pl renamed from the original blat2gff.pl also within the repository
+# if used for analysis i must be cited with the original script and writer  "don gilbert, 2007, gilbertd@indiana.edu"
 
 ## added some text to the output gff file
 ## name of the probe must have the "length of the probe minus the mismatch" added to the name of the probe
