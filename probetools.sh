@@ -9,11 +9,8 @@
 
 ##  activate the environment for this downstream analysis
 eval "$(conda shell.bash hook)";
-conda activate probetools;
+conda activate 02-viralprobes;
 
-
-#USAGE='use arguments with proper values \
-#after script\ ie -e file extension fasta file\ -b for probes in batch\ -i for identity of the probe\ -c amount of coverage of the targets';
 
 WORKDIR="$PWD";
 
@@ -23,7 +20,7 @@ LOG="$PWD"/LOGS;
 
 date
 
-while getopts e:b:i:c: flag
+while getopts e:b::i::c:: flag
 do
     case "${flag}" in
         e) extension=${OPTARG};;
@@ -36,7 +33,7 @@ done
 
 
 [ -z "$extension" ] && echo "use -e for extension";
-[ -z "$batch" ] && echo "use -b for batch size (default value:100 probes per batch)";
+[ -z "$batch" ] && echo "use -b for batch size (default value: 100 probes per batch)";
 [ -z "$identity" ] && echo "use -i for identity (default value: 95%)";
 [ -z "$probecov" ] && echo "use -c for probe coverage";
 
@@ -45,7 +42,6 @@ find *.$extension > fasta.lst;
 
 
 
-cat fasta.lst;
 
 count0=1;
 countS=$(cat fasta.lst | wc -l);
@@ -53,7 +49,17 @@ countS=$(cat fasta.lst | wc -l);
 nodes=90;
 lowcov=0;
 
+for identity in 90 92 95 98 100;do
+
+batch=50;
+probecov=10;
+
+
 while [ $count0 -le $countS ];do
+
+
+
+
 
 	FILEin=$(cat fasta.lst | awk 'NR=='$count0 );
 
@@ -71,6 +77,7 @@ echo $OUTdir;
 LOG1="$LOG"/"$short"."$batch"."$probecov"."$identity".makeprobes.log;
 LOG2="$LOG"/"$short"."$batch"."$probecov"."$identity".getlowcov.log;
 LOG3="$LOG"/"$short"."$batch"."$probecov"."$identity".stats.log;
+LOG4="$LOG"/"$short"."$batch"."$probecov"."$identity".rename.log;
 
 probetools makeprobes -t "$FILEin" -b "$batch" -o "$OUTdir"/"$short" -i "$identity" -T "$nodes" -D "$lowcov" -l 110 -c 100 -L 10 -d 5 > "$LOG1" 2>&1;
 
@@ -81,22 +88,43 @@ probetools getlowcov -i "$LOWCOVin" -o "$OUTdir"/"$short" > "$LOG2" 2>&1;
 
 probetools stats -i "$LOWCOVin" -o "$OUTdir"/"$short" > "$LOG3" 2>&1;
 
+RENAMEin="$OUTdir"/"$short"_probes.fa;
+RENAMEout="$OUTdir"/"$short"_probes.renamed.fa;
 
+rename.sh in="$RENAMEin" out="$RENAMEout" prefix="$short" ow > "$LOG4" 2>&1;
 
-BLATin="$OUTdir"/"$short"_probes.fa;
 BLATdb="$FILEin";
-BLATout="$OUTdir"/"$short".blat.out.pslx;
+BLATout="$OUTdir"/"$short".blat.out.psl;
 
 
-		blat  "$BLATdb" "$BLATin" -t=dna -q=dna -noTrimA -out=pslx -tileSize=11 -stepSize=1 -oneOff=2 -minIdentity=95 "$BLATout";
+
+PROBElst="$OUTdir"/"$short".probeName.lst;
 
 
+
+		blat  "$BLATdb" "$RENAMEout" -t=dna -q=dna -noTrimA -out=psl -tileSize=11 -stepSize=1 -oneOff=2 -minIdentity=95 "$BLATout";
+
+perl blat2gff.pl < "$BLATout" > "$GFFout";
+
+
+cat "$RENAMEout" | grep '^>' | cut -f2 -d'>' > "$PROBElst";
+
+
+PROBEhit="$OUTdir"/"$short".prb.hit.table.tab;
+
+while read prb;do
+
+tel=$(cat $BLATout | grep -c "$prb");
+echo -e "$prb\t$tel" > "$PROBEhit";
+
+done < "$PROBElst"
 
 
 count0=$((count0+1));
 
 done
 
+done 
 
 exit 1
 
