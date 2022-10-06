@@ -6,6 +6,13 @@
 ## https://stackabuse.com/how-to-parse-command-line-arguments-in-bash/
 
 
+## date: 20221006-11:00
+## add blat analysis to it
+## add blat2gff.pl to it
+## add rename the probe header from the probelist to a prefix with probetools conditions and numbers.
+## In this way we exclude double probenames if probe output files are concatenated
+## create probe hit table for metrics
+
 
 ##  activate the environment for this downstream analysis
 eval "$(conda shell.bash hook)";
