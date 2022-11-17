@@ -56,7 +56,7 @@ countS=$(cat fasta.lst | wc -l);
 nodes=90;
 lowcov=0;
 
-for identity in 90 92 95 98 100;do
+
 
 batch=50;
 probecov=10;
@@ -65,7 +65,7 @@ probecov=10;
 while [ $count0 -le $countS ];do
 
 
-
+for identity in 90 92 95 98 100;do
 
 
 	FILEin=$(cat fasta.lst | awk 'NR=='$count0 );
@@ -97,11 +97,16 @@ probetools stats -i "$LOWCOVin" -o "$OUTdir"/"$short" > "$LOG3" 2>&1;
 
 RENAMEin="$OUTdir"/"$short"_probes.fa;
 RENAMEout="$OUTdir"/"$short"_probes.renamed.fa;
+RENAMEoutTab="$OUTdir"/"$short"_probes.renamed.tab;
 
-rename.sh in="$RENAMEin" out="$RENAMEout" prefix="$short" ow > "$LOG4" 2>&1;
+
+rename.sh in="$RENAMEin" out="$RENAMEout" prefix="$short" fastawrap=1000 ow > "$LOG4" 2>&1;
+
+cat "$RENAMEout" | paste - - > "$RENAMEoutTab";
 
 BLATdb="$FILEin";
 BLATout="$OUTdir"/"$short".blat.out.psl;
+BLAToutx="$OUTdir"/"$short".blat.out.pslx;
 GFFout="$OUTdir"/"$short".blat.out.gff;
 
 
@@ -110,28 +115,59 @@ PROBElst="$OUTdir"/"$short".probeName.lst;
 
 
 		blat  "$BLATdb" "$RENAMEout" -t=dna -q=dna -noTrimA -out=psl -tileSize=11 -stepSize=1 -oneOff=2 -minIdentity=95 "$BLATout";
+		blat  "$BLATdb" "$RENAMEout" -t=dna -q=dna -noTrimA -out=pslx -tileSize=11 -stepSize=1 -oneOff=2 -minIdentity=95 "$BLAToutx";
 
 perl blat2gff.pl < "$BLATout" > "$GFFout";
 
 
-cat "$RENAMEout" | grep '^>' | cut -f2 -d'>' > "$PROBElst";
+#cat "$RENAMEout" | grep '^>' | cut -f2 -d'>' > "$PROBElst";
 
 
-PROBEhit="$OUTdir"/"$short".prb.hit.table.tab;
 
-while read prb;do
 
-tel=$(cat $BLATout | grep -c "$prb");
-echo -e "$prb\t$tel" > "$PROBEhit";
+## create probe hit table for later use
 
-done < "$PROBElst"
+		PROBEhit="$OUTdir"/"$short".prb.hit.table.tab;
+
+			while read LINE;do
+
+				probeName=$(echo "$LINE" | cut -f2 -d'>' | cut -f1 -d$'\t');
+				probeSeq=$(echo "$LINE" | cut -f2 -d$'\t');
+
+				echo $probeName;
+				echo $probeSeq;
+
+				tel=$(cat $BLATout | grep -c "$probeName");
+				
+				echo -e "$probeName\t$tel" > "$PROBEhit";
+
+				name=$(cat $BLAToutx | grep "$probeName" | cut -f10,14,22,23);
+				nameonly=$(cat $BLAToutx | grep "$probeName" | sort -k2,2 -k1 | head -n1 | cut -f14 | cut -f1 -d'_' );
+				seqonly=$(cat $BLAToutx | grep "$probeName" | sort -k2,2 -k1 | head -n1 | cut -f22 | cut -f1 -d',' );
+				
+				
+				echo -e ">$nameonly\n$probeSeq" >> "$short".id"$identity".oligo.fasta;
+				
+						
+
+			done < "$RENAMEoutTab"
+
+
+			reformat.sh in="$short".id"$identity".oligo.fasta tuc=t uniquenames=t out="$short".id"$identity".oligo.final.fasta ow fastawrap=1000 ;
+
+done 
 
 
 count0=$((count0+1));
-
 done
 
-done 
+
+
+
+
+
+
+
 
 exit 1
 
