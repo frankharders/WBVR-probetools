@@ -102,7 +102,7 @@ rename.sh in="$RENAMEin" out="$RENAMEout" prefix="$short" ow > "$LOG4" 2>&1;
 
 BLATdb="$FILEin";
 BLATout="$OUTdir"/"$short".blat.out.psl;
-
+GFFout="$OUTdir"/"$short".blat.out.gff;
 
 
 PROBElst="$OUTdir"/"$short".probeName.lst;
